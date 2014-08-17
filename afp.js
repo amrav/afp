@@ -83,10 +83,16 @@ function setSystemProxy() {
 }
 
 commonProxyCommands = {
-    'darwin': 'networksetup -setsecurewebproxy "Wi-Fi" %h:%p && networksetup -setwebproxy "Wi-Fi" %h:%p'
+    'darwin': 'networksetup -setsecurewebproxy "Wi-Fi" %h %p && networksetup -setwebproxy "Wi-Fi" %h %p'
 };
 
 (function main() {
+
+    if (argv.help) {
+        printUsage();
+        process.exit();
+    }
+    
     var DEFAULT_UPDATE_TIME = 15;
     var DEFAULT_SLEEP_TIME = 10;
     argv.time = parseInt(argv.time || DEFAULT_UPDATE_TIME);
