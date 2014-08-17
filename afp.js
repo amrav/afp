@@ -88,25 +88,36 @@ function setSystemProxy() {
     });
 }
 
-var WIN_PROXY_COMMAND = 'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d %h:%p /f';
-
 commonProxyCommands = {
     'darwin': 'networksetup -setsecurewebproxy "Wi-Fi" %h %p && networksetup -setwebproxy "Wi-Fi" %h %p',
-    'win': WIN_PROXY_COMMAND,
-    'ubuntu': 'gsettings set org.gnome.system.proxy.http host %h && gsettings set org.gnome.system.proxy.http port proxy_port %p'
+    'win': 'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d %h:%p /f',
+    'ubuntu': 'gsettings set org.gnome.system.proxy.http host %h && gsettings set org.gnome.system.proxy.http port %p'
 };
 
-function detectProxyCommand() {
-    if (os.platform() === 'darwin') {
-        return commonProxyCommands.darwin;
-    } else if (/^win/.test(os.platform())) {
-        return commonProxyCommands.win;
-    } else if (os.platform() === 'linux') {
-        if (execSync('lsb_release -si') === 'Ubuntu') {
-            return commonProxyCommands.ubuntu;
-        }
+function detectProxyCommand(cb) {
+    if (argv.proxyCommand) {
+	cb(null, argv.proxyCommand);
     }
-    return null;
+    if (os.platform() === 'darwin') {
+        cb(null, commonProxyCommands.darwin);
+    } else if (/^win/.test(os.platform())) {
+        cb(null, commonProxyCommands.win);
+    } else if (os.platform() === 'linux') {
+        exec('lsb_release -si', function(err, stdout, stderr) {
+	    if (err) {
+		return cb(err);
+	    }
+	    if (/Ubuntu/.test(stdout)) {
+		cb(null, commonProxyCommands.ubuntu);
+	    }
+	    else if (stderr) {
+		console.log("stderr: ", stderr);
+		cb(true);
+	    }
+        });
+    } else {
+	cb('no proxy command detected');
+    }
 }
 
 (function main() {
@@ -121,20 +132,23 @@ function detectProxyCommand() {
     argv.time = parseInt(argv.time || DEFAULT_UPDATE_TIME);
     argv.sleep = parseInt(argv.sleep || DEFAULT_SLEEP_TIME);
 
-    if (!argv.proxyCommand) {
-        argv.proxyCommand = detectProxyCommand();
-        if (!argv.proxyCommand)
-            console.log("Proxy command automatically detected.");
-    } else {
-        printUsage();
-        process.exit(1);
-    }
-
-    console.log("Auto fast proxy started...");
-    async.forever(function(next) {
-        updateAllProxies(argv.time, function() {
-            setSystemProxy();
-            setTimeout(next, argv.sleep * 1000);
-        });
-    });
+    async.waterfall([detectProxyCommand,
+		     function(proxyCommand) {
+			 argv.proxyCommand = proxyCommand;
+			 console.log("Auto fast proxy started...");
+			 async.forever(function(next) {
+			     updateAllProxies(argv.time, function() {
+				 setSystemProxy();
+				 setTimeout(next, argv.sleep * 1000);
+			     });
+			 });
+		     }],
+		    function(err) {
+			if (err === 'no proxy command detected') {
+			    printUsage();
+			    process.exit(1);
+			    
+			}
+		    });
+    
 })();
