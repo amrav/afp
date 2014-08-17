@@ -6,7 +6,11 @@ var os = require('os');
 
 function curlCommand(proxy, largeFileUrl, time) {
     time = time || 5;
-    return util.format('curl --silent --max-time %s --proxy %s -o /dev/null --write-out %{speed_download} %s', time, proxy, largeFileUrl);
+    var outputFile = '/dev/null';
+    if (/^win/.test(os.platform())) {
+        outputFile = 'NUL';
+    }
+    return util.format('curl --silent --max-time %s --proxy %s -o %s --write-out %{speed_download} %s', time, proxy, outputFile, largeFileUrl);
 }
 
 proxySpeeds = {};
@@ -82,8 +86,12 @@ function setSystemProxy() {
     });
 }
 
+var WIN_PROXY_COMMAND = 'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyServer /t REG_SZ /d %h:%p /f';
+
 commonProxyCommands = {
-    'darwin': 'networksetup -setsecurewebproxy "Wi-Fi" %h %p && networksetup -setwebproxy "Wi-Fi" %h %p'
+    'darwin': 'networksetup -setsecurewebproxy "Wi-Fi" %h %p && networksetup -setwebproxy "Wi-Fi" %h %p',
+    'win32': WIN_PROXY_COMMAND,
+    'win64': WIN_PROXY_COMMAND
 };
 
 (function main() {
