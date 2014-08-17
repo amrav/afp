@@ -86,7 +86,7 @@ function setSystemProxy() {
     });
 }
 
-var WIN_PROXY_COMMAND = 'reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyServer /t REG_SZ /d %h:%p /f';
+var WIN_PROXY_COMMAND = 'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d %h:%p /f';
 
 commonProxyCommands = {
     'darwin': 'networksetup -setsecurewebproxy "Wi-Fi" %h %p && networksetup -setwebproxy "Wi-Fi" %h %p',
