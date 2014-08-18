@@ -1,4 +1,6 @@
-var exec = require('child_process').exec;
+var child_process = require('child_process');
+var exec = child_process.exec;
+var execSync = child_process.execSync;
 var util = require('util');
 var async = require('async');
 var argv = require('minimist')(process.argv.slice(2));
@@ -78,7 +80,7 @@ function setSystemProxy() {
     var port = fp[1];
 
     var proxyCommand = argv.proxyCommand.replace(/%h/g, host).replace(/%p/g, port);
-    console.log(proxyCommand);
+    console.log(util.format("Fastest proxy set as %s:%s", host, port));
     exec(proxyCommand, function(error, stdout, stderr) {
         if (error) {
             console.error('exec error: ', error);
@@ -90,9 +92,22 @@ var WIN_PROXY_COMMAND = 'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVer
 
 commonProxyCommands = {
     'darwin': 'networksetup -setsecurewebproxy "Wi-Fi" %h %p && networksetup -setwebproxy "Wi-Fi" %h %p',
-    'win32': WIN_PROXY_COMMAND,
-    'win64': WIN_PROXY_COMMAND
+    'win': WIN_PROXY_COMMAND,
+    'ubuntu': 'gsettings set org.gnome.system.proxy.http host %h && gsettings set org.gnome.system.proxy.http port proxy_port %p'
 };
+
+function detectProxyCommand() {
+    if (os.platform() === 'darwin') {
+        return commonProxyCommands.darwin;
+    } else if (/^win/.test(os.platform())) {
+        return commonProxyCommands.win;
+    } else if (os.platform() === 'linux') {
+        if (execSync('lsb_release -si') === 'Ubuntu') {
+            return commonProxyCommands.ubuntu;
+        }
+    }
+    return null;
+}
 
 (function main() {
 
@@ -107,12 +122,12 @@ commonProxyCommands = {
     argv.sleep = parseInt(argv.sleep || DEFAULT_SLEEP_TIME);
 
     if (!argv.proxyCommand) {
-        if (commonProxyCommands[os.platform()]) {
-            argv.proxyCommand = commonProxyCommands[os.platform()];
-        } else {
-            printUsage();
-            process.exit(1);
-        }
+        argv.proxyCommand = detectProxyCommand();
+        if (!argv.proxyCommand)
+            console.log("Proxy command automatically detected.");
+    } else {
+        printUsage();
+        process.exit(1);
     }
 
     console.log("Auto fast proxy started...");
