@@ -110,10 +110,14 @@ function detectProxyCommand(cb) {
 	    if (/Ubuntu/.test(stdout)) {
 		cb(null, commonProxyCommands.ubuntu);
 	    }
+            else if(/LinuxMint/.test(stdout)){
+                cb(null, commonProxyCommands.ubuntu);
+            }
 	    else if (stderr) {
 		console.log("stderr: ", stderr);
 		cb(true);
 	    }
+
         });
     } else {
 	cb('no proxy command detected');
