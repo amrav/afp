@@ -25,14 +25,18 @@ function getProxySpeed(proxy, time, cb) {
         var speed = stdout;
         if (error !== null && error.code !== CURL_INTERRUPTED_ERROR) {
             console.log('exec error: ', error);
-            return;
+            return cb(true);
         }
-        cb(speed);
+        cb(null, speed);
     });
 }
 
 function updateProxySpeed(proxy, time, cb) {
-    getProxySpeed(proxy, time, function(speed){
+    getProxySpeed(proxy, time, function(error, speed){
+        if (error) {
+            cb();
+            return;
+        }
         proxySpeeds[proxy] = {speed: parseInt(speed), updated: Date.now()};
         cb();
     });
@@ -80,18 +84,19 @@ function setSystemProxy() {
     var port = fp[1];
 
     var proxyCommand = argv.proxyCommand.replace(/%h/g, host).replace(/%p/g, port);
-    console.log(util.format("Fastest proxy set as %s:%s", host, port));
     exec(proxyCommand, function(error, stdout, stderr) {
         if (error) {
             console.error('exec error: ', error);
+            return;
         }
+        console.log(util.format("Fastest proxy set as %s:%s", host, port));
     });
 }
 
 commonProxyCommands = {
     'darwin': 'networksetup -setsecurewebproxy "Wi-Fi" %h %p && networksetup -setwebproxy "Wi-Fi" %h %p',
     'win': 'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d %h:%p /f',
-    'ubuntu': 'gsettings set org.gnome.system.proxy mode \'manual\' && gsettings set org.gnome.system.proxy.http host %h && gsettings set org.gnome.system.proxy.http port %p && gsettings set org.gnome.system.proxy.https host %h && gsettings set org.gnome.system.proxy.https port %p'
+    'ubuntu': 'gsettings set org.gnome.system.proxy.http host %h && gsettings set org.gnome.system.proxy.http port %p && gsettings set org.gnome.system.proxy.https host %h && gsettings set org.gnome.system.proxy.https port %p'
 };
 
 function detectProxyCommand(cb) {
@@ -141,7 +146,7 @@ function detectProxyCommand(cb) {
 			 argv.proxyCommand = proxyCommand;
 			 console.log("Auto fast proxy started...");
 			 async.forever(function(next) {
-			     updateAllProxies(argv.time, function() {
+			     updateAllProxies(argv.time, function(error) {
 				 setSystemProxy();
 				 setTimeout(next, argv.sleep * 1000);
 			     });
