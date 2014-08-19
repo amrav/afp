@@ -91,7 +91,7 @@ function setSystemProxy() {
 commonProxyCommands = {
     'darwin': 'networksetup -setsecurewebproxy "Wi-Fi" %h %p && networksetup -setwebproxy "Wi-Fi" %h %p',
     'win': 'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d %h:%p /f',
-    'ubuntu': 'gsettings set org.gnome.system.proxy.http host %h && gsettings set org.gnome.system.proxy.http port %p'
+    'ubuntu': 'gsettings set org.gnome.system.proxy mode \'manual\' && gsettings set org.gnome.system.proxy.http host %h && gsettings set org.gnome.system.proxy.http port %p && gsettings set org.gnome.system.proxy.https host %h && gsettings set org.gnome.system.proxy.https port %p'
 };
 
 function detectProxyCommand(cb) {
@@ -110,10 +110,14 @@ function detectProxyCommand(cb) {
 	    if (/Ubuntu/.test(stdout)) {
 		cb(null, commonProxyCommands.ubuntu);
 	    }
+            else if(/LinuxMint/.test(stdout)){
+                cb(null, commonProxyCommands.ubuntu);
+            }
 	    else if (stderr) {
 		console.log("stderr: ", stderr);
 		cb(true);
 	    }
+
         });
     } else {
 	cb('no proxy command detected');
