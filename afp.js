@@ -10,7 +10,7 @@ function curlCommand(proxy, url, time) {
     if (/^win/.test(os.platform())) {
         outputFile = 'NUL';
     }
-    return util.format('curl --silent --max-time %s --proxy %s -o %s --write-out %{speed_download} %s', time, proxy, outputFile, largeFileUrl);
+    return util.format('curl -X GET --silent --max-time %s --proxy %s -o %s --write-out %{speed_download} %s', time, proxy, outputFile, url);
 }
 
 allProxies = [];
@@ -42,7 +42,7 @@ function updateProxySpeed(proxy, time, url, cb) {
 
 exports.updateAllProxies = function(proxies, time, cb) {
     allProxies = proxies;
-    var IE_URL="http://download.microsoft.com/download/8/A/C/8AC7C482-BC74-492E-B978-7ED04900CEDE/IE10-Windows6.1-x86-en-us.exe";
+    var IE_URL="http://download.microsoft.com/download/8/A/C/8AC7C482-BC74-492E-B978-7ED04900CEDE/IE10-Windows6.1-x86-en-us.exe" + "?randomFoo=" + Math.random();
     async.each(proxies,
                function(proxy, cb) {
                    updateProxySpeed(proxy, time, IE_URL, cb);
