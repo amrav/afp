@@ -10,20 +10,19 @@ function curlCommand(proxy, url, time) {
     if (/^win/.test(os.platform())) {
         outputFile = 'NUL';
     }
-    return util.format('curl -X GET --silent --max-time %s --proxy %s -o %s --write-out %{speed_download} %s', time, proxy, outputFile, url);
+    return util.format('curl -X GET --silent --max-time %s --proxy %s -o %s --write-out %{speed_download} -L %s', time, proxy, outputFile, url);
 }
 
-allProxies = [];
-proxySpeeds = {};
+var allProxies = [];
+var proxySpeeds = {};
 
 function getProxySpeed(proxy, time, url, cb) {
     // TODO: Make platform independent
     var CURL_INTERRUPTED_ERROR = 28;
     exec(curlCommand(proxy, url, time), function(error, stdout, stderr) {
         var speed = stdout;
-        if (error !== null && error.code !== CURL_INTERRUPTED_ERROR) {
-            console.log('exec error: ', error);
-            return cb(true);
+        if (error !== null) {
+            return cb(true, 0);
         }
         cb(null, speed);
     });
@@ -31,10 +30,6 @@ function getProxySpeed(proxy, time, url, cb) {
 
 function updateProxySpeed(proxy, time, url, cb) {
     getProxySpeed(proxy, time, url, function(error, speed){
-        if (error) {
-            cb();
-            return;
-        }
         proxySpeeds[proxy] = {speed: parseInt(speed), updated: Date.now()};
         cb();
     });
@@ -50,13 +45,15 @@ exports.updateAllProxies = function(proxies, time, cb) {
 };
 
 exports.fastestProxy = function() {
-    var fastestProxy = allProxies[0];
+    var fp = allProxies[0];
     for (var i = 0; i < allProxies.length; i++) {
         var proxy = allProxies[i];
         if (proxySpeeds.hasOwnProperty(proxy) &&
-            proxySpeeds[proxy].speed > proxySpeeds[fastestProxy].speed) {
-            fastestProxy = proxy;
+            proxySpeeds[proxy].speed > proxySpeeds[fp].speed) {
+            fp = proxy;
         }
     }
-    return fastestProxy;
+    return fp;
 };
+
+exports.getProxySpeed = getProxySpeed;
