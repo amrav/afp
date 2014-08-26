@@ -4,7 +4,7 @@ var util = require('util');
 var os = require('os');
 var async = require('async');
 
-function curlCommand(proxy, largeFileUrl, time) {
+function curlCommand(proxy, url, time) {
     time = time || 5;
     var outputFile = '/dev/null';
     if (/^win/.test(os.platform())) {
@@ -16,11 +16,10 @@ function curlCommand(proxy, largeFileUrl, time) {
 allProxies = [];
 proxySpeeds = {};
 
-function getProxySpeed(proxy, time, cb) {
+function getProxySpeed(proxy, time, url, cb) {
     // TODO: Make platform independent
     var CURL_INTERRUPTED_ERROR = 28;
-    var IE_URL="http://download.microsoft.com/download/8/A/C/8AC7C482-BC74-492E-B978-7ED04900CEDE/IE10-Windows6.1-x86-en-us.exe";
-    exec(curlCommand(proxy, IE_URL, time), function(error, stdout, stderr) {
+    exec(curlCommand(proxy, url, time), function(error, stdout, stderr) {
         var speed = stdout;
         if (error !== null && error.code !== CURL_INTERRUPTED_ERROR) {
             console.log('exec error: ', error);
@@ -30,8 +29,8 @@ function getProxySpeed(proxy, time, cb) {
     });
 }
 
-function updateProxySpeed(proxy, time, cb) {
-    getProxySpeed(proxy, time, function(error, speed){
+function updateProxySpeed(proxy, time, url, cb) {
+    getProxySpeed(proxy, time, url, function(error, speed){
         if (error) {
             cb();
             return;
@@ -43,9 +42,10 @@ function updateProxySpeed(proxy, time, cb) {
 
 exports.updateAllProxies = function(proxies, time, cb) {
     allProxies = proxies;
+    var IE_URL="http://download.microsoft.com/download/8/A/C/8AC7C482-BC74-492E-B978-7ED04900CEDE/IE10-Windows6.1-x86-en-us.exe";
     async.each(proxies,
                function(proxy, cb) {
-                   updateProxySpeed(proxy, time, cb);
+                   updateProxySpeed(proxy, time, IE_URL, cb);
                }, cb);
 };
 
