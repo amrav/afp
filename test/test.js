@@ -1,9 +1,9 @@
 var exec = require('child_process').exec;
 var util = require('util');
-var afp = require('./afp');
+var afp = require('../afp');
 var argv = require('minimist')(process.argv.slice(2));
 var async = require('async');
-var config = require('./config.json');
+var config = require('../config.json');
 
 var TIMESTAMP = Date.now();
 
@@ -17,17 +17,21 @@ function printBenchmark(proxy, website, speed) {
     var args = {
         proxy: proxy,
         website: website,
-        speed: speed,
+        speed: parseFloat(speed),
         timestamp: TIMESTAMP
     };
+    if (proxy === argv.proxy) {
+        args.fastestProxy = true;
+    }
     console.log(JSON.stringify(args));
 }
 
 function printProxyBenchmarks(proxy, cb) {
+    argv.time = argv.time || 20;
     async.each(testWebsites,
                function(website, cb) {
                    website += '/?randomFoo=' + Math.random();
-                   afp.getProxySpeed(proxy, 30, website, function(err, speed) {
+                   afp.getProxySpeed(proxy, argv.time, website, function(err, speed) {
                        if (err) {
                            printBenchmark(proxy, website, 0);
                        } else {
@@ -43,9 +47,5 @@ function printBenchmarks() {
 }
 
 (function main() {
-    console.log(JSON.stringify({
-        fastestProxy: argv.proxy || 'undefined',
-        timestamp: TIMESTAMP
-    }));
     printBenchmarks();
 })();
