@@ -37,7 +37,7 @@ function updateProxySpeed(proxy, time, url, cb) {
 
 exports.updateAllProxies = function(proxies, time, cb) {
     allProxies = proxies;
-    var IE_URL="http://download.microsoft.com/download/8/A/C/8AC7C482-BC74-492E-B978-7ED04900CEDE/IE10-Windows6.1-x86-en-us.exe" + "?randomFoo=" + Math.random();
+    // var IE_URL="http://download.microsoft.com/download/8/A/C/8AC7C482-BC74-492E-B978-7ED04900CEDE/IE10-Windows6.1-x86-en-us.exe" + "?randomFoo=" + Math.random();
     var FB_URL="http://www.facebook.com/" + "?randomFoo=" + Math.random();
     async.each(proxies,
                function(proxy, cb) {
@@ -53,6 +53,9 @@ exports.fastestProxy = function() {
             proxySpeeds[proxy].speed > proxySpeeds[fp].speed) {
             fp = proxy;
         }
+    }
+    if (proxySpeeds[fp] === 0) {
+        return null;
     }
     return fp;
 };

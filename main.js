@@ -48,15 +48,21 @@ function detectProxyCommand(cb) {
     async.waterfall([detectProxyCommand,
                      function(proxyCommand) {
                          if (!argv.silent) {
-                             console.log("Auto fast proxy started...");
+                             console.log("Auto fast proxy started.");
                          }
                          async.forever(function(next) {
                              afp.updateAllProxies(
                                  config.proxies, argv.time,
                                  function(error) {
-                                     var fp = afp.fastestProxy().split(':');
-                                     runProxyCommand(proxyCommand, fp[0], fp[1]);
-                                     setTimeout(next, argv.sleep * 1000);
+                                     var fp = afp.fastestProxy();
+                                     if (fp === null) {
+                                         console.log("Warning: Couldn't detect the fastest proxy. Check your network?");
+                                         setTimeout(next, 30 * 1000);
+                                     } else {
+                                         fp = fp.split(':');
+                                         runProxyCommand(proxyCommand, fp[0], fp[1]);
+                                         setTimeout(next, argv.sleep * 1000);
+                                     }
                                  });
                          });
                      }],
